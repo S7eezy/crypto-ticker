@@ -154,7 +154,8 @@ class GUI(ctk.CTk):
                     logo_label.configure(image=logo_photo)
                     logo_label.image = logo_photo
 
-                price_label.configure(text=f"{ticker.price:.6f}")
+                precision = 7 - len(str(ticker.price).split('.')[0])
+                price_label.configure(text=f"{ticker.price:.{precision}f}")
 
                 arrow = "▲" if ticker.change_24h > 0 else "▼"
                 color = "green" if ticker.change_24h > 0 else "red"

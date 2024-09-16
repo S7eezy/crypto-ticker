@@ -115,14 +115,7 @@ class Ticker:
             else:
                 text_color = 'black'
 
-            screen_width = 1024
-            screen_height = 600
-            width_scale = screen_width / 1920
-            height_scale = screen_height / 1080
-            fig_width *= width_scale
-            fig_height *= height_scale * 0.7
-
-            fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
+            fig, ax = plt.subplots(figsize=(7, 3.5), dpi=100)
             fig.patch.set_alpha(0.0)
             ax.set_facecolor('none')
 
@@ -315,7 +308,7 @@ class GUI(ctk.CTk):
             if os.path.exists(ticker.logo_path):
                 logo_image = Image.open(ticker.logo_path)
                 logo_size = int(48 * font_scale)
-                logo_image = logo_image.resize((logo_size, logo_size), Image.LANCZOS)
+                logo_image = logo_image.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
                 logo_photo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(logo_size, logo_size))
                 logo_label.configure(image=logo_photo)
                 logo_label.image = logo_photo
@@ -345,9 +338,9 @@ class GUI(ctk.CTk):
             )
 
             if ticker.candlestick_image:
-                chart_width = int(400 * width_scale)
-                chart_height = int(200 * height_scale)
-                chart_image = ticker.candlestick_image.resize((chart_width, chart_height), Image.LANCZOS)
+                chart_width = int(550 * width_scale)
+                chart_height = int(275 * height_scale)
+                chart_image = ticker.candlestick_image.resize((chart_width, chart_height), Image.Resampling.LANCZOS)
                 chart_photo = ctk.CTkImage(light_image=chart_image, dark_image=chart_image, size=(chart_width, chart_height))
                 chart_label.configure(image=chart_photo)
                 chart_label.image = chart_photo

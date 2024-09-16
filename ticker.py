@@ -95,6 +95,8 @@ class Ticker:
 
 class GUI(ctk.CTk):
     def __init__(self):
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("blue")
         super().__init__()
         self.title("Crypto Price Display")
         self.geometry("1920x1080")
@@ -112,8 +114,8 @@ class GUI(ctk.CTk):
 
         self.frames = []
         for i, ticker in enumerate(self.tickers):
-            frame = ctk.CTkFrame(self, corner_radius=10)
-            frame.grid(row=i // 2, column=i % 2, padx=20, pady=20, sticky="nsew")
+            frame = ctk.CTkFrame(self, corner_radius=20, fg_color="#2B2B2B")
+            frame.grid(row=i // 2, column=i % 2, padx=40, pady=40, sticky="nsew")
             frame.grid_rowconfigure((0, 1, 2, 3, 4), weight=1)
             frame.grid_columnconfigure(0, weight=1)
 
@@ -121,19 +123,23 @@ class GUI(ctk.CTk):
             logo_label.grid(row=0, column=0, pady=(20, 10))
 
             name_label = ctk.CTkLabel(frame, text=ticker.symbol,
-                                      font=ctk.CTkFont(family="Arial Rounded MT Bold", size=48, weight="bold"))
+                                      font=ctk.CTkFont(family="Helvetica", size=36, weight="bold"),
+                                      anchor='center')
             name_label.grid(row=1, column=0, pady=5)
 
             price_label = ctk.CTkLabel(frame, text="",
-                                       font=ctk.CTkFont(family="Arial Rounded MT Bold", size=72))
+                                       font=ctk.CTkFont(family="Helvetica", size=60, weight="bold"),
+                                       anchor='center')
             price_label.grid(row=2, column=0, pady=5)
 
             change_label = ctk.CTkLabel(frame, text="",
-                                        font=ctk.CTkFont(family="Arial Rounded MT Bold", size=48))
+                                        font=ctk.CTkFont(family="Helvetica", size=36),
+                                        anchor='center')
             change_label.grid(row=3, column=0, pady=5)
 
             api_label = ctk.CTkLabel(frame, text="",
-                                     font=ctk.CTkFont(family="Arial", size=18))
+                                     font=ctk.CTkFont(family="Helvetica", size=18),
+                                     anchor='center')
             api_label.grid(row=4, column=0, pady=5)
 
             self.frames.append((logo_label, name_label, price_label, change_label, api_label))
@@ -143,30 +149,37 @@ class GUI(ctk.CTk):
     @sleep_and_retry
     @limits(calls=CALLS, period=RATE_LIMIT)
     def update_prices(self):
-        for ticker, (logo_label, name_label, price_label, change_label, api_label) in zip(self.tickers, self.frames):
+        for ticker, frame_elements in zip(self.tickers, self.frames):
             ticker.update()
-
-            try:
-                if os.path.exists(ticker.logo_path):
-                    logo_image = Image.open(ticker.logo_path)
-                    logo_image = logo_image.resize((128, 128))
-                    logo_photo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(128, 128))
-                    logo_label.configure(image=logo_photo)
-                    logo_label.image = logo_photo
-
-                precision = 7 - len(str(ticker.price).split('.')[0])
-                price_label.configure(text=f"{ticker.price:.{precision}f}")
-
-                arrow = "▲" if ticker.change_24h > 0 else "▼"
-                color = "green" if ticker.change_24h > 0 else "red"
-                change_label.configure(text=f"{arrow} {abs(ticker.change_24h):.2f}%", text_color=color)
-
-                api_label.configure(
-                    text=f"API: {ticker.current_api.name}\nLast update: {ticker.last_update.strftime('%H:%M:%S')}")
-            except Exception as e:
-                logging.error(f"Unexpected error updating display for {ticker.symbol}: {e}")
+            self.update_ticker_display(ticker, frame_elements)
 
         self.after(10000, self.update_prices)
+
+    def update_ticker_display(self, ticker, frame_elements):
+        logo_label, name_label, price_label, change_label, api_label = frame_elements
+
+        try:
+            if os.path.exists(ticker.logo_path):
+                logo_image = Image.open(ticker.logo_path)
+                logo_image = logo_image.resize((128, 128))
+                logo_photo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(128, 128))
+                logo_label.configure(image=logo_photo)
+                logo_label.image = logo_photo
+
+            precision = 7 - len(str(int(ticker.price)))
+            precision = max(2, precision)
+            formatted_price = f"{ticker.price:,.{precision}f}"
+            price_label.configure(text=f"${formatted_price}", text_color="white")
+
+            arrow = "▲" if ticker.change_24h > 0 else "▼"
+            color = "#00FF00" if ticker.change_24h > 0 else "#FF0000"
+            change_label.configure(text=f"{arrow} {abs(ticker.change_24h):.2f}%", text_color=color)
+
+            api_label.configure(
+                text=f"API: {ticker.current_api.name}\nLast update: {ticker.last_update.strftime('%H:%M:%S')}",
+                text_color="gray")
+        except Exception as e:
+            logging.error(f"Unexpected error updating display for {ticker.symbol}: {e}")
 
 
 def run_gui():

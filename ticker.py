@@ -10,6 +10,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import json
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.environ['DISPLAY'] = ':0'
+
 matplotlib.use('Agg')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -104,7 +107,22 @@ class Ticker:
 
     def plot_candlestick_chart(self, data):
         try:
-            fig, ax = plt.subplots(figsize=(7, 3.5), dpi=100)
+            fig_width = 7
+            fig_height = 3.5
+
+            if self.appearance_mode == 'Dark':
+                text_color = 'white'
+            else:
+                text_color = 'black'
+
+            screen_width = 1024
+            screen_height = 600
+            width_scale = screen_width / 1920
+            height_scale = screen_height / 1080
+            fig_width *= width_scale
+            fig_height *= height_scale * 0.7
+
+            fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
             fig.patch.set_alpha(0.0)
             ax.set_facecolor('none')
 
@@ -125,8 +143,6 @@ class Ticker:
                                      0.8, abs(val[4] - val[1]),
                                      color=color)
                 ax.add_patch(rect)
-
-            text_color = 'white' if self.appearance_mode == 'Dark' else 'black'
 
             ax.text(idx_highest, highest_high, f'{highest_high:.2f}', color=text_color, fontsize=8,
                     verticalalignment='bottom', horizontalalignment='center')
@@ -173,9 +189,17 @@ class Ticker:
 class GUI(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Crypto Price Display")
-        self.geometry("1920x1080")
+
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        self.geometry(f"{screen_width}x{screen_height}")
         self.attributes('-fullscreen', True)
+
+        width_scale = screen_width / 1920
+        height_scale = screen_height / 1080
+        font_scale = min(width_scale, height_scale)
+        if screen_height <= 600:
+            font_scale *= 0.8
 
         self.appearance_mode = "Dark"
         ctk.set_appearance_mode(self.appearance_mode.lower())
@@ -184,8 +208,8 @@ class GUI(ctk.CTk):
         self.main_frame = ctk.CTkFrame(self, corner_radius=0)
         self.main_frame.pack(fill="both", expand=True)
 
-        self.sun_icon = ctk.CTkImage(Image.open('./assets/sun.png'), size=(24, 24))
-        self.moon_icon = ctk.CTkImage(Image.open('./assets/moon.png'), size=(24, 24))
+        self.sun_icon = ctk.CTkImage(Image.open('./assets/sun.png'), size=(int(24 * font_scale), int(24 * font_scale)))
+        self.moon_icon = ctk.CTkImage(Image.open('./assets/moon.png'), size=(int(24 * font_scale), int(24 * font_scale)))
 
         if self.appearance_mode == "Dark":
             initial_icon = self.sun_icon
@@ -196,7 +220,7 @@ class GUI(ctk.CTk):
             fg_color = "#E0E0E0"
             hover_color = "#D0D0D0"
 
-        self.mode_button = ctk.CTkButton(self.main_frame, text="", width=40, height=40, corner_radius=20,
+        self.mode_button = ctk.CTkButton(self.main_frame, text="", width=int(40 * font_scale), height=int(40 * font_scale), corner_radius=20,
                                          command=self.toggle_mode, image=initial_icon,
                                          fg_color=fg_color, hover_color=hover_color)
         self.mode_button.place(relx=0.5, rely=0.5, anchor="center")
@@ -214,35 +238,40 @@ class GUI(ctk.CTk):
         self.frames = []
         for i, ticker in enumerate(self.tickers):
             frame = ctk.CTkFrame(self.main_frame, corner_radius=20)
-            frame.grid(row=i // 2, column=i % 2, padx=30, pady=30, sticky="nsew")
+            frame.grid(row=i // 2, column=i % 2, padx=int(15 * width_scale), pady=int(15 * height_scale), sticky="nsew")
             frame.grid_rowconfigure((0, 1, 2, 3, 4, 5), weight=1)
             frame.grid_columnconfigure(0, weight=1)
 
+            name_font = ctk.CTkFont(family="Helvetica", size=int(24 * font_scale), weight="bold")
+            price_font = ctk.CTkFont(family="Helvetica", size=int(36 * font_scale), weight="bold")
+            change_font = ctk.CTkFont(family="Helvetica", size=int(24 * font_scale))
+            updated_font = ctk.CTkFont(family="Helvetica", size=int(12 * font_scale))
+
             logo_label = ctk.CTkLabel(frame, text="")
-            logo_label.grid(row=0, column=0, pady=(10, 5))
+            logo_label.grid(row=0, column=0, pady=(int(5 * height_scale), int(2 * height_scale)))
 
             name_label = ctk.CTkLabel(frame, text=ticker.symbol,
-                                      font=ctk.CTkFont(family="Helvetica", size=32, weight="bold"),
+                                      font=name_font,
                                       anchor='center')
-            name_label.grid(row=1, column=0, pady=5)
+            name_label.grid(row=1, column=0, pady=int(2 * height_scale))
 
             price_label = ctk.CTkLabel(frame, text="",
-                                       font=ctk.CTkFont(family="Helvetica", size=48, weight="bold"),
+                                       font=price_font,
                                        anchor='center')
-            price_label.grid(row=2, column=0, pady=5)
+            price_label.grid(row=2, column=0, pady=int(2 * height_scale))
 
             change_label = ctk.CTkLabel(frame, text="",
-                                        font=ctk.CTkFont(family="Helvetica", size=32),
+                                        font=change_font,
                                         anchor='center')
-            change_label.grid(row=3, column=0, pady=5)
+            change_label.grid(row=3, column=0, pady=int(2 * height_scale))
 
             chart_label = ctk.CTkLabel(frame, text="")
-            chart_label.grid(row=4, column=0, pady=(5, 10))
+            chart_label.grid(row=4, column=0, pady=(int(2 * height_scale), int(5 * height_scale)))
 
             updated_label = ctk.CTkLabel(frame, text="",
-                                         font=ctk.CTkFont(family="Helvetica", size=14),
+                                         font=updated_font,
                                          anchor='center')
-            updated_label.grid(row=5, column=0, pady=(0, 10))
+            updated_label.grid(row=5, column=0, pady=(0, int(5 * height_scale)))
 
             self.frames.append((logo_label, name_label, price_label, change_label, chart_label, updated_label))
 
@@ -275,12 +304,31 @@ class GUI(ctk.CTk):
         logo_label, name_label, price_label, change_label, chart_label, updated_label = frame_elements
 
         try:
+            screen_width = self.winfo_screenwidth()
+            screen_height = self.winfo_screenheight()
+            width_scale = screen_width / 1920
+            height_scale = screen_height / 1080
+            font_scale = min(width_scale, height_scale)
+            if screen_height <= 600:
+                font_scale *= 0.8
+
             if os.path.exists(ticker.logo_path):
                 logo_image = Image.open(ticker.logo_path)
-                logo_image = logo_image.resize((64, 64), Image.LANCZOS)
-                logo_photo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(64, 64))
+                logo_size = int(48 * font_scale)
+                logo_image = logo_image.resize((logo_size, logo_size), Image.LANCZOS)
+                logo_photo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(logo_size, logo_size))
                 logo_label.configure(image=logo_photo)
                 logo_label.image = logo_photo
+
+            name_font = ctk.CTkFont(family="Helvetica", size=int(24 * font_scale), weight="bold")
+            price_font = ctk.CTkFont(family="Helvetica", size=int(36 * font_scale), weight="bold")
+            change_font = ctk.CTkFont(family="Helvetica", size=int(24 * font_scale))
+            updated_font = ctk.CTkFont(family="Helvetica", size=int(12 * font_scale))
+
+            name_label.configure(font=name_font)
+            price_label.configure(font=price_font)
+            change_label.configure(font=change_font)
+            updated_label.configure(font=updated_font)
 
             precision = 7 - len(str(int(ticker.price)))
             precision = max(2, precision)
@@ -297,8 +345,10 @@ class GUI(ctk.CTk):
             )
 
             if ticker.candlestick_image:
-                chart_image = ticker.candlestick_image.resize((550, 275), Image.LANCZOS)  # Increased size
-                chart_photo = ctk.CTkImage(light_image=chart_image, dark_image=chart_image, size=(550, 275))
+                chart_width = int(400 * width_scale)
+                chart_height = int(200 * height_scale)
+                chart_image = ticker.candlestick_image.resize((chart_width, chart_height), Image.LANCZOS)
+                chart_photo = ctk.CTkImage(light_image=chart_image, dark_image=chart_image, size=(chart_width, chart_height))
                 chart_label.configure(image=chart_photo)
                 chart_label.image = chart_photo
 

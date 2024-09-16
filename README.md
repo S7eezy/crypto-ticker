@@ -2,8 +2,7 @@
 Simple Python GUI displaying live crypto prices. Originally designed to run on a Raspberry Pi.
 
 # Showcase
-![image](https://github.com/user-attachments/assets/e8d364d1-de2a-4d69-92ce-c3c58733dc47)
-
+![image](https://github.com/user-attachments/assets/b2687b2b-08e0-4d48-8821-ae17f1c6a464)
 
 # Usage
 `pip install -r requirements.txt`
